@@ -3701,6 +3701,7 @@ void NetConn_QueryMasters(qboolean querydp, qboolean queryqw)
 							NetConn_ClientParsePacket_ServerList_PrepareQuery( PROTOCOL_DARKPLACES7, request, true );
 					}
 				}
+				serverlist_querysleep = false;
 			}
 		}
 	}
@@ -3752,6 +3753,7 @@ void NetConn_QueryMasters(qboolean querydp, qboolean queryqw)
 						}
 					}
 				}
+				serverlist_querysleep = false;
 			}
 		}
 	}
