@@ -5577,7 +5577,7 @@ void R_UpdateVariables(void)
 	switch(vid.renderpath)
 	{
 	case RENDERPATH_GL32:
-		r_gpuskeletal = r_glsl_skeletal.integer && !r_showsurfaces.integer;
+		r_gpuskeletal = r_glsl_skeletal.integer && !r_showsurfaces.integer && r_shadows.integer <= 0 && !r_refdef.scene.rtdlightshadows && !r_refdef.scene.rtworldshadows;
 	case RENDERPATH_GLES2:
 		if(!vid_gammatables_trivial)
 		{
