@@ -1503,7 +1503,7 @@ void DrawQ_FlushUI(void)
 			GL_BlendFunc(tex->customblendfunc[0], tex->customblendfunc[1]);
 		else if (tex->currentmaterialflags & MATERIALFLAG_ADD)
 			GL_BlendFunc(GL_SRC_ALPHA, GL_ONE);
-		else if (tex->currentmaterialflags & MATERIALFLAG_ALPHA)
+		else if (tex->currentmaterialflags & MATERIALFLAG_ALPHA || tex->currentalpha < 1)
 			GL_BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		else
 			GL_BlendFunc(GL_ONE, GL_ZERO);

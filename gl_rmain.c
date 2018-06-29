@@ -6845,7 +6845,7 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 
 	if (rsurface.ent_flags & RENDER_ADDITIVE)
 		t->currentmaterialflags |= MATERIALFLAG_ADD | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW;
-	else if (t->currentalpha < 1)
+	else if (t->currentalpha < 1 || t->currentskinframe->hasalpha)
 		t->currentmaterialflags |= MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW;
 	// LordHavoc: prevent bugs where code checks add or alpha at higher priority than customblend by clearing these flags
 	if (t->currentmaterialflags & MATERIALFLAG_CUSTOMBLEND)
