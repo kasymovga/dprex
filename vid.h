@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern int cl_available;
 
-#define MAX_TEXTUREUNITS 16
+#define MAX_TEXTUREUNITS 32
 
 typedef enum renderpath_e
 {
