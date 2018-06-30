@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "snd_main.h"
 #include "thread.h"
 #include "utf8lib.h"
+#include "net_httpserver.h"
 
 /*
 
@@ -610,6 +611,7 @@ void Host_ShutdownServer(void)
 		if (host_client->active)
 			SV_DropClient(false); // server shutdown
 
+	Net_HttpServerShutdown();
 	NetConn_CloseServerPorts();
 
 	sv.active = false;
@@ -1277,6 +1279,7 @@ static void Host_Init (void)
 	Host_ServerOptions();
 
 	Thread_Init();
+	Net_HttpServerInit();
 
 	if (cls.state == ca_dedicated)
 		Cmd_AddCommand ("disconnect", CL_Disconnect_f, "disconnect from server (or disconnect all clients if running a server)");
@@ -1465,5 +1468,6 @@ void Host_Shutdown(void)
 	S_Shutdown();
 	Con_Shutdown();
 	Memory_Shutdown();
+	Net_HttpServerShutdown();
 }
 
