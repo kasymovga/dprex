@@ -8068,6 +8068,7 @@ static void Mod_Q3BSP_Load(dp_model_t *mod, void *buffer, void *bufferend)
 
 		// generate VBOs and other shared data before cloning submodels
 		if (i == 0)
+		if (cls.state != ca_dedicated)
 			Mod_BuildVBOs();
 	}
 
