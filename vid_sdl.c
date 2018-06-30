@@ -2163,6 +2163,93 @@ static void AdjustWindowBounds(viddef_mode_t *mode, RECT *rect)
 }
 #endif
 
+#include "darkplaces.xpm"
+#include "nexuiz.xpm"
+#include "rexuiz.xpm"
+
+static void VID_LoadIconFromXPM(char **idata) {
+	SDL_Surface *icon = NULL;
+	char *data = idata[0];
+	int i, j, width, height, colors, isize;
+	static SDL_Color palette[256];
+	int thenone = -1;
+	if(sscanf(data, "%i %i %i %i", &width, &height, &colors, &isize) == 4)
+	{
+		if(isize == 1 && colors <= 256)
+		{
+			for(i = 0; i < colors; ++i)
+			{
+				unsigned int r, g, b;
+				unsigned char idx;
+
+				if(sscanf(idata[i+1], "%c c #%02x%02x%02x", &idx, &r, &g, &b) != 4)
+				{
+					char foo[2];
+					if(sscanf(idata[i+1], "%c c Non%1[e]", &idx, foo) != 2) // I take the DailyWTF credit for this. --div0
+						break;
+					else
+					{
+						palette[idx].r = 0; // color key
+						palette[idx].g = 0;
+						palette[idx].b = 0;
+						palette[idx].a = 0;
+						thenone = i; // weeeee
+					}
+				}
+				else
+				{
+					palette[idx].r = r - (r == 255 && g == 0 && b == 255); // change 255/0/255 pink to 254/0/255 for color key
+					palette[idx].g = g;
+					palette[idx].b = b;
+					palette[idx].a = 255;
+				}
+			}
+
+			if (i == colors)
+			{
+				// allocate the image data
+				data = (char*) malloc(width*height * 4);
+				if (data) {
+					for(j = 0; j < height; ++j)
+					{
+						for(i = 0; i < width; ++i)
+						{
+							// casting to the safest possible datatypes ^^
+							data[j * width * 4 + i * 4    ] = palette[idata[colors+j+1][i]].r;
+							data[j * width * 4 + i * 4 + 1] = palette[idata[colors+j+1][i]].g;
+							data[j * width * 4 + i * 4 + 2] = palette[idata[colors+j+1][i]].b;
+							data[j * width * 4 + i * 4 + 3] = palette[idata[colors+j+1][i]].a;;
+						}
+					}
+					#ifdef DL_BYTEORDER == SDL_BIG_ENDIAN
+					icon = SDL_CreateRGBSurfaceFrom(data,width,height,32,width * 4,0xff000000,0x00ff0000,0x0000ff00,0x000000ff);
+					#else
+					icon = SDL_CreateRGBSurfaceFrom(data,width,height,32,width * 4,0x000000ff,0x0000ff00,0x00ff0000,0xff000000);
+					#endif
+					if(!icon)
+					{
+						Con_Printf(	"Failed to create surface for the window Icon!\n"
+								"%s\n", SDL_GetError());
+					} else {
+						SDL_SetWindowIcon(window, icon);
+						SDL_FreeSurface(icon);
+					}
+					free(data);
+				}
+			}
+			else
+			{
+				Con_Printf("This XPM's palette looks odd. Can't continue.\n");
+			}
+		}
+		else
+		{
+			// NOTE: Only 1-char colornames are supported
+			Con_Printf("This XPM's palette is either huge or idiotically unoptimized. It's key size is %i\n", isize);
+		}
+	}
+}
+
 static qboolean VID_InitModeGL(viddef_mode_t *mode)
 {
 	int windowflags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL;
@@ -2276,6 +2363,12 @@ static qboolean VID_InitModeGL(viddef_mode_t *mode)
 		VID_Shutdown();
 		return false;
 	}
+	if (gamemode == GAME_NEXUIZ)
+		VID_LoadIconFromXPM(nexuiz_xpm);
+	else if (gamemode == GAME_REXUIZ)
+		VID_LoadIconFromXPM(rexuiz_xpm);
+	else
+		VID_LoadIconFromXPM(darkplaces_xpm);
 
 	SDL_GL_SetSwapInterval(bound(-1, vid_vsync.integer, 1));
 	vid_usingvsync = (vid_vsync.integer != 0);
