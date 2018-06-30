@@ -515,7 +515,8 @@ dp_model_t *Mod_LoadModel(dp_model_t *mod, qboolean crash, qboolean checkdisk)
 			Mem_Free(buf);
 		}
 
-		Mod_BuildVBOs();
+		if(cls.state != ca_dedicated)
+			Mod_BuildVBOs();
 	}
 	else if (crash)
 	{
