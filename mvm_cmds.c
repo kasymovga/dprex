@@ -49,6 +49,7 @@ const char *vm_m_extensions =
 "DP_QC_URI_POST "
 "DP_QC_WHICHPACK "
 "FTE_STRINGS "
+"DP_RM_IRC "
 ;
 
 /*

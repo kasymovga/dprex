@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "snd_main.h"
 #include "thread.h"
 #include "utf8lib.h"
+#include "irc.h"
 
 /*
 
@@ -1072,6 +1073,7 @@ void Host_Main(void)
 				svs.perf_acc_lost += sv_timer;
 			sv_timer = 0;
 		}
+		IRC_Frame();
 
 		host_framecount++;
 	}
@@ -1275,6 +1277,7 @@ static void Host_Init (void)
 	Host_InitCommands();
 	Host_InitLocal();
 	Host_ServerOptions();
+	IRC_Init();
 
 	Thread_Init();
 
