@@ -452,6 +452,7 @@ cvar_t m_accelerate = {CVAR_SAVE, "m_accelerate","1", "mouse acceleration factor
 cvar_t m_accelerate_minspeed = {CVAR_SAVE, "m_accelerate_minspeed","5000", "below this speed, no acceleration is done"};
 cvar_t m_accelerate_maxspeed = {CVAR_SAVE, "m_accelerate_maxspeed","10000", "above this speed, full acceleration is done"};
 cvar_t m_accelerate_filter = {CVAR_SAVE, "m_accelerate_filter","0.1", "mouse acceleration factor filtering"};
+cvar_t m_q3accelerate = {CVAR_SAVE, "m_q3accelerate","0", "mouse Q3-like acceleration factor (try 0.01)"};
 
 cvar_t cl_netfps = {CVAR_SAVE, "cl_netfps","72", "how many input packets to send to server each second"};
 cvar_t cl_netrepeatinput = {CVAR_SAVE, "cl_netrepeatinput", "1", "how many packets in a row can be lost without movement issues when using cl_movement (technically how many input messages to repeat in each packet that have not yet been acknowledged by the server), only affects DP7 and later servers (Quake uses 0, QuakeWorld uses 2, and just for comparison Quake3 uses 1)"};
@@ -621,6 +622,12 @@ void CL_Input (void)
 
 		in_mouse_x *= f;
 		in_mouse_y *= f;
+	} else if (m_q3accelerate.value > 0) {
+		float f = m_q3accelerate.value *
+				(sqrt(in_mouse_x * in_mouse_x + in_mouse_y * in_mouse_y) / cl.realframetime)
+				* cl.realframetime;
+		in_mouse_x += in_mouse_x * f;
+		in_mouse_y += in_mouse_y * f;
 	}
 
 	// apply m_filter if it is on
@@ -2263,6 +2270,7 @@ void CL_InitInput (void)
 	Cvar_RegisterVariable(&m_accelerate_minspeed);
 	Cvar_RegisterVariable(&m_accelerate_maxspeed);
 	Cvar_RegisterVariable(&m_accelerate_filter);
+	Cvar_RegisterVariable(&m_q3accelerate);
 
 	Cvar_RegisterVariable(&cl_netfps);
 	Cvar_RegisterVariable(&cl_netrepeatinput);
