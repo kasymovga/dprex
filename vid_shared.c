@@ -773,9 +773,6 @@ void VID_ClearExtensions(void)
 	vid.maxtexturesize_2d = 0;
 	vid.maxtexturesize_3d = 0;
 	vid.maxtexturesize_cubemap = 0;
-	vid.texunits = 1;
-	vid.teximageunits = 1;
-	vid.texarrayunits = 1;
 	vid.max_anisotropy = 1;
 	vid.maxdrawbuffers = 1;
 
@@ -866,14 +863,6 @@ void VID_CheckExtensions(void)
 	qglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, (GLint*)&vid.max_anisotropy);
 	qglGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, (GLint*)&vid.maxtexturesize_cubemap);
 	qglGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, (GLint*)&vid.maxtexturesize_3d);
-	vid.texunits = vid.teximageunits = vid.texarrayunits = 1;
-	qglGetIntegerv(GL_MAX_TEXTURE_UNITS, (GLint*)&vid.texunits);
-	qglGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, (int *)&vid.teximageunits);CHECKGLERROR
-	qglGetIntegerv(GL_MAX_TEXTURE_COORDS, (int *)&vid.texarrayunits);CHECKGLERROR
-	vid.texunits = bound(4, vid.texunits, MAX_TEXTUREUNITS);
-	vid.teximageunits = bound(16, vid.teximageunits, MAX_TEXTUREUNITS);
-	vid.texarrayunits = bound(8, vid.texarrayunits, MAX_TEXTUREUNITS);
-	Con_DPrint("Using GL3 rendering path\n");
 	vid.renderpath = RENDERPATH_GL32;
 	vid.sRGBcapable2D = false;
 	vid.sRGBcapable3D = true;
