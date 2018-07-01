@@ -51,6 +51,7 @@ const char *vm_m_extensions =
 "FTE_STRINGS "
 "DP_RM_CVAR_ALTERTYPE "
 "DP_RM_QCSENDPACKET "
+"DP_RM_IRC "
 ;
 
 /*
