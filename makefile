@@ -241,6 +241,11 @@ ifeq ($(DP_MAKE_TARGET), mingw)
 	DP_LINK_CRYPTO_RIJNDAEL?=dlopen
 endif
 
+ifeq ($(DP_LIBMICROHTTPD),yes)
+	CFLAGS_LIBMICROHTTPD=-DUSE_LIBMICROHTTPD `pkg-config --cflags libmicrohttpd`
+	LIB_LIBMICROHTTPD=`pkg-config --libs libmicrohttpd`
+endif
+
 # set these to "" if you want to use dynamic loading instead
 # zlib
 ifeq ($(DP_LINK_ZLIB), shared)
