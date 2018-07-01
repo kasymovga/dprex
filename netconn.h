@@ -471,6 +471,7 @@ void ServerList_QueryList(qboolean resetcache, qboolean querydp, qboolean queryq
 
 /// called whenever net_slist_favorites changes
 void NetConn_UpdateFavorites(void);
+void NetConn_UpdateExtra(void);
 #endif
 
 #define MAX_CHALLENGES 128
