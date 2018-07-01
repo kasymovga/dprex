@@ -49,6 +49,7 @@ const char *vm_m_extensions =
 "DP_QC_URI_POST "
 "DP_QC_WHICHPACK "
 "FTE_STRINGS "
+"DP_RM_CVAR_ALTERTYPE "
 "DP_RM_QCSENDPACKET "
 ;
 
@@ -1464,7 +1465,7 @@ NULL,									// #501
 NULL,									// #502
 VM_whichpack,					// #503 string(string) whichpack = #503;
 NULL,									// #504
-NULL,									// #505
+VM_cvar_altertype,						// #505 float(string varname, float setflags, float unsetflags) cvar_altertype = #505;
 NULL,									// #506
 NULL,									// #507
 NULL,									// #508

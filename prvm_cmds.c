@@ -691,6 +691,75 @@ void VM_cvar_type(prvm_prog_t *prog)
 
 /*
 =================
+VM_cvar_altertype
+
+float cvar_altertype(string varname, float setflags, float unsetflags);
+=================
+*/
+
+#define CVAR_TYPEFLAG_EXISTS 1
+#define CVAR_TYPEFLAG_SAVED 2
+#define CVAR_TYPEFLAG_PRIVATE 4
+#define CVAR_TYPEFLAG_ENGINE 8
+#define CVAR_TYPEFLAG_HASDESCRIPTION 16
+#define CVAR_TYPEFLAG_READONLY 32
+static int typeflags_to_cvarflags(int flags) {
+    int ret = 0;
+
+    if(flags & CVAR_TYPEFLAG_SAVED)
+        ret |= CVAR_SAVE;
+
+    if(flags & CVAR_TYPEFLAG_READONLY)
+        ret |= CVAR_READONLY;
+
+    return ret;
+}
+
+void VM_cvar_altertype(prvm_prog_t *prog) {
+    int setflags, unsetflags;
+    const char *cvarname;
+    cvar_t *cvar;
+
+    VM_SAFEPARMCOUNT(3, VM_cvar_altertype);
+    PRVM_G_FLOAT(OFS_RETURN) = 0;
+
+    cvarname = PRVM_G_STRING(OFS_PARM0);
+    VM_CheckEmptyString(prog, cvarname);
+    cvar = Cvar_FindVar(cvarname);
+
+    if(!cvar) {
+        Con_Printf("VM_cvar_altertype: cvar \"%s\" not found\n", cvarname);
+        return;
+    }
+
+    if(!(cvar->flags & CVAR_ALLOCATED)) {
+        Con_Printf("VM_cvar_altertype: attempted to modify an engine cvar \"%s\"\n", cvarname);
+        return;
+    }
+
+    setflags = (int)PRVM_G_FLOAT(OFS_PARM1);
+    unsetflags = (int)PRVM_G_FLOAT(OFS_PARM2);
+
+#define CVAR_TYPEFLAGS_ALTERFORBIDDEN (CVAR_TYPEFLAG_EXISTS | CVAR_TYPEFLAG_PRIVATE | CVAR_TYPEFLAG_ENGINE | CVAR_TYPEFLAG_HASDESCRIPTION)
+    if(setflags & CVAR_TYPEFLAGS_ALTERFORBIDDEN) {
+        Con_Printf("VM_cvar_altertype: bad flags: %i\n", setflags);
+        return;
+    }
+
+    if(unsetflags & CVAR_TYPEFLAGS_ALTERFORBIDDEN) {
+        Con_Printf("VM_cvar_altertype: bad flags: %i\n", unsetflags);
+        return;
+    }
+#undef CVAR_TYPEFLAGS_ALTERFORBIDDEN
+
+    cvar->flags |= typeflags_to_cvarflags(setflags);
+    cvar->flags &= ~typeflags_to_cvarflags(unsetflags);
+
+    PRVM_G_FLOAT(OFS_RETURN) = 1;
+}
+
+/*
+=================
 VM_cvar_string
 
 const string	VM_cvar_string (string, ...)
