@@ -7393,3 +7393,34 @@ void VM_coverage(prvm_prog_t *prog)
 	if (prog->explicit_profile[prog->xstatement]++ == 0 && (prvm_coverage.integer & 2))
 		PRVM_ExplicitCoverageEvent(prog, prog->xfunction, prog->xstatement);
 }
+
+void VM_net_sendpacket(prvm_prog_t *prog) {
+    char send[2048] = { 0 };
+    const char *addr;
+    lhnetaddress_t address;
+    lhnetsocket_t *mysocket;
+
+    VM_SAFEPARMCOUNT(2, net_sendpacket);
+    PRVM_G_FLOAT(OFS_RETURN) = 0;
+
+    addr = PRVM_G_STRING(OFS_PARM0);
+
+    if(!LHNETADDRESS_FromString(&address, addr, sv_netport.integer)) {
+        VM_Warning(prog, "VM_net_sendpacket: bad address: %s\n", addr);
+        return;
+    }
+
+    strlcpy(send, "\xff\xff\xff\xff", sizeof(send));
+    strlcat(send, PRVM_G_STRING(OFS_PARM1), sizeof(send));
+
+	if (prog == SVVM_prog)
+		mysocket = NetConn_ChooseServerSocketForAddress(&address);
+	else
+		mysocket = NetConn_ChooseClientSocketForAddress(&address);
+
+    if(mysocket) {
+        NetConn_Write(mysocket, send, strlen(send), &address);
+        PRVM_G_FLOAT(OFS_RETURN) = 1;
+    }
+}
+
