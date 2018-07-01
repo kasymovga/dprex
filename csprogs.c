@@ -492,6 +492,7 @@ qboolean CL_VM_UpdateView (double frametime)
 		PRVM_G_FLOAT(OFS_PARM0) = vid.width;
 		PRVM_G_FLOAT(OFS_PARM1) = vid.height;
 		prog->ExecuteProgram(prog, PRVM_clientfunction(CSQC_UpdateView), "QC function CSQC_UpdateView is missing");
+		prog->polygonbegin_guess2d = false;
 		//VectorCopy(oldangles, cl.viewangles);
 		// Dresk : Reset Dmg Globals Here
 		CL_VM_UpdateDmgGlobals(0, 0, emptyvector);
