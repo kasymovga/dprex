@@ -111,12 +111,14 @@ cachepic_t *Draw_CachePic_Flags(const char *path, unsigned int cachepicflags)
 				// ignore TEXF_COMPRESS when comparing, because fallback pics remove the flag, and ignore TEXF_MIPMAP because QC specifies that
 				if ((pic->texflags ^ texflags) & ~(TEXF_COMPRESS | TEXF_MIPMAP))
 				{
-					Con_DPrintf("Draw_CachePic(\"%s\"): reloading pic due to mismatch on flags\n", path);
+					Con_DPrintf("Draw_CachePic(\"%s\"): frame %i: reloading pic due to mismatch on flags\n", path, draw_frame);
 					goto reload;
 				}
 				if (!pic->skinframe || !pic->skinframe->base)
 				{
-					Con_DPrintf("Draw_CachePic(\"%s\"): reloading pic\n", path);
+					if (pic->flags & CACHEPICFLAG_FAILONMISSING)
+						return NULL;
+					Con_DPrintf("Draw_CachePic(\"%s\"): frame %i: reloading pic\n", path, draw_frame);
 					goto reload;
 				}
 				if (!(cachepicflags & CACHEPICFLAG_NOTPERSISTENT))
@@ -131,11 +133,11 @@ cachepic_t *Draw_CachePic_Flags(const char *path, unsigned int cachepicflags)
 
 	if (numcachepics == MAX_CACHED_PICS)
 	{
-		Con_Printf ("Draw_CachePic(\"%s\"): numcachepics == MAX_CACHED_PICS\n", path);
+		Con_Printf ("Draw_CachePic(\"%s\"): frame %i: numcachepics == MAX_CACHED_PICS\n", path, draw_frame);
 		// FIXME: support NULL in callers?
 		return cachepics; // return the first one
 	}
-	Con_DPrintf("Draw_CachePic(\"%s\"): loading pic\n", path);
+	Con_DPrintf("Draw_CachePic(\"%s\"): frame %i: loading pic%s\n", path, draw_frame, (cachepicflags & CACHEPICFLAG_NOTPERSISTENT) ? " notpersist" : "");
 	pic = cachepics + (numcachepics++);
 	memset(pic, 0, sizeof(*pic));
 	strlcpy (pic->name, path, sizeof(pic->name));
@@ -207,7 +209,10 @@ qboolean Draw_IsPicLoaded(cachepic_t *pic)
 	if (pic == NULL)
 		return false;
 	if (pic->autoload && (!pic->skinframe || !pic->skinframe->base))
+	{
+		Con_DPrintf("Draw_IsPicLoaded(\"%s\"): Loading external skin\n", pic->name);
 		pic->skinframe = R_SkinFrame_LoadExternal(pic->name, pic->texflags | TEXF_FORCE_RELOAD, false, true);
+	}
 	// skinframe will only be NULL if the pic was created with CACHEPICFLAG_FAILONMISSING and not found
 	return pic->skinframe != NULL && pic->skinframe->base != NULL;
 }
@@ -217,7 +222,10 @@ rtexture_t *Draw_GetPicTexture(cachepic_t *pic)
 	if (pic == NULL)
 		return NULL;
 	if (pic->autoload && (!pic->skinframe || !pic->skinframe->base))
+	{
+		Con_DPrintf("Draw_GetPicTexture(\"%s\"): Loading external skin\n", pic->name);
 		pic->skinframe = R_SkinFrame_LoadExternal(pic->name, pic->texflags | TEXF_FORCE_RELOAD, false, true);
+	}
 	pic->lastusedframe = draw_frame;
 	return pic->skinframe ? pic->skinframe->base : NULL;
 }
@@ -231,8 +239,13 @@ void Draw_Frame(void)
 		return;
 	nextpurgetime = realtime + 0.05;
 	for (i = 0, pic = cachepics;i < numcachepics;i++, pic++)
+	{
 		if (pic->autoload && pic->skinframe && pic->skinframe->base && pic->lastusedframe < draw_frame - 3)
+		{
+			Con_DPrintf("Draw_Frame(%i): Unloading \"%s\"\n", draw_frame, pic->name);
 			R_SkinFrame_PurgeSkinFrame(pic->skinframe);
+		}
+	}
 	draw_frame++;
 }
 
@@ -251,20 +264,23 @@ cachepic_t *Draw_NewPic(const char *picname, int width, int height, unsigned cha
 	{
 		if (pic->flags & CACHEPICFLAG_NEWPIC && pic->skinframe && pic->skinframe->base && pic->width == width && pic->height == height)
 		{
+			Con_DPrintf("Draw_NewPic(\"%s\"): frame %i: updating texture\n", picname, draw_frame);
 			R_UpdateTexture(pic->skinframe->base, pixels_bgra, 0, 0, 0, width, height, 1);
 			R_SkinFrame_MarkUsed(pic->skinframe);
 			pic->lastusedframe = draw_frame;
 			return pic;
 		}
+		Con_Printf("Draw_NewPic(\"%s\"): frame %i: reloading pic because flags/size changed\n", picname, draw_frame);
 	}
 	else
 	{
 		if (numcachepics == MAX_CACHED_PICS)
 		{
-			Con_Printf ("Draw_NewPic: numcachepics == MAX_CACHED_PICS\n");
+			Con_Printf ("Draw_NewPic(\"%s\"): frame %i: numcachepics == MAX_CACHED_PICS\n", picname, draw_frame);
 			// FIXME: support NULL in callers?
 			return cachepics; // return the first one
 		}
+		Con_Printf("Draw_NewPic(\"%s\"): frame %i: creating new cachepic\n", picname, draw_frame);
 		pic = cachepics + (numcachepics++);
 		memset(pic, 0, sizeof(*pic));
 		strlcpy (pic->name, picname, sizeof(pic->name));
@@ -281,7 +297,7 @@ cachepic_t *Draw_NewPic(const char *picname, int width, int height, unsigned cha
 	pic->flags |= (texflags & TEXF_FORCENEAREST) ? CACHEPICFLAG_NEAREST : 0;
 	pic->width = width;
 	pic->height = height;
-	pic->skinframe = R_SkinFrame_LoadInternalBGRA(picname, texflags | TEXF_FORCE_RELOAD, pixels_bgra, width, height, vid.sRGB2D);
+	pic->skinframe = R_SkinFrame_LoadInternalBGRA(picname, texflags | TEXF_FORCE_RELOAD, pixels_bgra, width, height, 0, 0, 0, vid.sRGB2D);
 	pic->lastusedframe = draw_frame;
 	return pic;
 }
@@ -298,9 +314,8 @@ void Draw_FreePic(const char *picname)
 	{
 		if (!strcmp (picname, pic->name) && pic->skinframe)
 		{
+			Con_DPrintf("Draw_FreePic(\"%s\"): frame %i: freeing pic\n", picname, draw_frame);
 			R_SkinFrame_PurgeSkinFrame(pic->skinframe);
-			pic->width = 0;
-			pic->height = 0;
 			return;
 		}
 	}
@@ -779,7 +794,7 @@ void DrawQ_Pic(float x, float y, cachepic_t *pic, float width, float height, flo
 		width = pic->width;
 	if (height == 0)
 		height = pic->height;
-	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, pic->name, flags, pic->texflags, MATERIALFLAG_VERTEXCOLOR), true);
+	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, pic->name, flags, pic->texflags, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX), true);
 	e0 = Mod_Mesh_IndexForVertex(mod, surf, x        , y         , 0, 0, 0, -1, 0, 0, 0, 0, red, green, blue, alpha);
 	e1 = Mod_Mesh_IndexForVertex(mod, surf, x + width, y         , 0, 0, 0, -1, 1, 0, 0, 0, red, green, blue, alpha);
 	e2 = Mod_Mesh_IndexForVertex(mod, surf, x + width, y + height, 0, 0, 0, -1, 1, 1, 0, 0, red, green, blue, alpha);
@@ -807,7 +822,7 @@ void DrawQ_RotPic(float x, float y, cachepic_t *pic, float width, float height, 
 		width = pic->width;
 	if (height == 0)
 		height = pic->height;
-	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, pic->name, flags, pic->texflags, MATERIALFLAG_VERTEXCOLOR), true);
+	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, pic->name, flags, pic->texflags, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX), true);
 	e0 = Mod_Mesh_IndexForVertex(mod, surf, x - cosaf *          org_x  - cosar *           org_y , y - sinaf *          org_x  - sinar *           org_y , 0, 0, 0, -1, 0, 0, 0, 0, red, green, blue, alpha);
 	e1 = Mod_Mesh_IndexForVertex(mod, surf, x + cosaf * (width - org_x) - cosar *           org_y , y + sinaf * (width - org_x) - sinar *           org_y , 0, 0, 0, -1, 1, 0, 0, 0, red, green, blue, alpha);
 	e2 = Mod_Mesh_IndexForVertex(mod, surf, x + cosaf * (width - org_x) + cosar * (height - org_y), y + sinaf * (width - org_x) + sinar * (height - org_y), 0, 0, 0, -1, 1, 1, 0, 0, red, green, blue, alpha);
@@ -1258,7 +1273,7 @@ float DrawQ_String_Scale(float startx, float starty, const char *text, size_t ma
 					u = 0.0625f * thisw - (1.0f / tw);
 					v = 0.0625f - (1.0f / th);
 				}
-				surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, fnt->pic->name, flags, TEXF_ALPHA | TEXF_CLAMP, MATERIALFLAG_VERTEXCOLOR), true);
+				surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, fnt->pic->name, flags, TEXF_ALPHA | TEXF_CLAMP, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX), true);
 				e0 = Mod_Mesh_IndexForVertex(mod, surf, x         , y   , 10, 0, 0, -1, s  , t  , 0, 0, DrawQ_Color[0], DrawQ_Color[1], DrawQ_Color[2], DrawQ_Color[3]);
 				e1 = Mod_Mesh_IndexForVertex(mod, surf, x+dw*thisw, y   , 10, 0, 0, -1, s+u, t  , 0, 0, DrawQ_Color[0], DrawQ_Color[1], DrawQ_Color[2], DrawQ_Color[3]);
 				e2 = Mod_Mesh_IndexForVertex(mod, surf, x+dw*thisw, y+dh, 10, 0, 0, -1, s+u, t+v, 0, 0, DrawQ_Color[0], DrawQ_Color[1], DrawQ_Color[2], DrawQ_Color[3]);
@@ -1299,7 +1314,7 @@ float DrawQ_String_Scale(float startx, float starty, const char *text, size_t ma
 				}
 				else
 					kx = ky = 0;
-				surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, map->pic->name, flags, TEXF_ALPHA | TEXF_CLAMP, MATERIALFLAG_VERTEXCOLOR), true);
+				surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, map->pic->name, flags, TEXF_ALPHA | TEXF_CLAMP, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX), true);
 				e0 = Mod_Mesh_IndexForVertex(mod, surf, x + dw * map->glyphs[mapch].vxmin, y + dh * map->glyphs[mapch].vymin, 10, 0, 0, -1, map->glyphs[mapch].txmin, map->glyphs[mapch].tymin, 0, 0, DrawQ_Color[0], DrawQ_Color[1], DrawQ_Color[2], DrawQ_Color[3]);
 				e1 = Mod_Mesh_IndexForVertex(mod, surf, x + dw * map->glyphs[mapch].vxmax, y + dh * map->glyphs[mapch].vymin, 10, 0, 0, -1, map->glyphs[mapch].txmax, map->glyphs[mapch].tymin, 0, 0, DrawQ_Color[0], DrawQ_Color[1], DrawQ_Color[2], DrawQ_Color[3]);
 				e2 = Mod_Mesh_IndexForVertex(mod, surf, x + dw * map->glyphs[mapch].vxmax, y + dh * map->glyphs[mapch].vymax, 10, 0, 0, -1, map->glyphs[mapch].txmax, map->glyphs[mapch].tymax, 0, 0, DrawQ_Color[0], DrawQ_Color[1], DrawQ_Color[2], DrawQ_Color[3]);
@@ -1403,7 +1418,7 @@ void DrawQ_SuperPic(float x, float y, cachepic_t *pic, float width, float height
 		width = pic->width;
 	if (height == 0)
 		height = pic->height;
-	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, pic->name, flags, pic->texflags, MATERIALFLAG_VERTEXCOLOR), true);
+	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, pic->name, flags, pic->texflags, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX), true);
 	e0 = Mod_Mesh_IndexForVertex(mod, surf, x        , y         , 0, 0, 0, -1, s1, t1, 0, 0, r1, g1, b1, a1);
 	e1 = Mod_Mesh_IndexForVertex(mod, surf, x + width, y         , 0, 0, 0, -1, s2, t2, 0, 0, r2, g2, b2, a2);
 	e2 = Mod_Mesh_IndexForVertex(mod, surf, x + width, y + height, 0, 0, 0, -1, s4, t4, 0, 0, r4, g4, b4, a4);
@@ -1429,7 +1444,7 @@ void DrawQ_Line (float width, float x1, float y1, float x2, float y2, float r, f
 		offsetx = 0.5f * width * vid_conwidth.value / vid.width;
 		offsety = 0;
 	}
-	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, "white", 0, 0, MATERIALFLAG_VERTEXCOLOR), true);
+	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, "white", 0, 0, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX), true);
 	e0 = Mod_Mesh_IndexForVertex(mod, surf, x1 - offsetx, y1 - offsety, 10, 0, 0, -1, 0, 0, 0, 0, r, g, b, alpha);
 	e1 = Mod_Mesh_IndexForVertex(mod, surf, x2 - offsetx, y2 - offsety, 10, 0, 0, -1, 0, 0, 0, 0, r, g, b, alpha);
 	e2 = Mod_Mesh_IndexForVertex(mod, surf, x2 + offsetx, y2 + offsety, 10, 0, 0, -1, 0, 0, 0, 0, r, g, b, alpha);
@@ -1481,7 +1496,6 @@ void DrawQ_RecalcView(void)
 
 void DrawQ_FlushUI(void)
 {
-	int i;
 	dp_model_t *mod = CL_Mesh_UI();
 	if (mod->num_surfaces == 0)
 		return;
@@ -1493,23 +1507,12 @@ void DrawQ_FlushUI(void)
 	}
 
 	// TODO: render the mesh using R_Q1BSP_Draw or similar, for full material support.
+	r_refdef.view.colorscale = 1;
+	r_textureframe++; // used only by R_GetCurrentTexture
 	GL_DepthMask(false);
-	R_Mesh_PrepareVertices_Generic_Arrays(mod->surfmesh.num_vertices, mod->surfmesh.data_vertex3f, mod->surfmesh.data_lightmapcolor4f, mod->surfmesh.data_texcoordtexture2f);
-	for (i = 0; i < mod->num_surfaces; i++)
-	{
-		msurface_t *surf = mod->data_surfaces + i;
-		texture_t *tex = surf->texture;
-		if (tex->currentmaterialflags & MATERIALFLAG_CUSTOMBLEND)
-			GL_BlendFunc(tex->customblendfunc[0], tex->customblendfunc[1]);
-		else if (tex->currentmaterialflags & MATERIALFLAG_ADD)
-			GL_BlendFunc(GL_SRC_ALPHA, GL_ONE);
-		else if (tex->currentmaterialflags & MATERIALFLAG_ALPHA || tex->currentalpha < 1)
-			GL_BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		else
-			GL_BlendFunc(GL_ONE, GL_ZERO);
-		R_SetupShader_Generic(tex->currentskinframe->base, (tex->currentmaterialflags & MATERIALFLAG_CUSTOMBLEND) ? false : true, true, false);
-		R_Mesh_Draw(surf->num_firstvertex, surf->num_vertices, surf->num_firsttriangle, surf->num_triangles, mod->surfmesh.data_element3i, NULL, 0, mod->surfmesh.data_element3s, NULL, 0);
-	}
+
+	Mod_Mesh_Finalize(mod);
+	R_DrawModelSurfaces(&cl_meshentities[MESH_UI].render, false, false, false, false, false, true);
 
 	Mod_Mesh_Reset(mod);
 }
