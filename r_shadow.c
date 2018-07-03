@@ -367,7 +367,7 @@ qboolean R_Shadow_ShadowMappingEnabled(void)
 	switch (r_shadow_shadowmode)
 	{
 	case R_SHADOW_SHADOWMODE_SHADOWMAP2D:
-		return true;
+		return r_shadow_shadowmapping.integer && (r_refdef.scene.rtworldshadows || r_refdef.scene.rtdlightshadows || r_shadow_shadowmapatlas_modelshadows_size);
 	default:
 		return false;
 	}
