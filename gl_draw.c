@@ -1314,7 +1314,7 @@ float DrawQ_String_Scale(float startx, float starty, const char *text, size_t ma
 				}
 				else
 					kx = ky = 0;
-				surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, map->pic->name, flags, TEXF_ALPHA | TEXF_CLAMP, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX), true);
+				surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, map->pic->name, flags, TEXF_ALPHA | TEXF_CLAMP, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_FULLBRIGHT), true);
 				e0 = Mod_Mesh_IndexForVertex(mod, surf, x + dw * map->glyphs[mapch].vxmin, y + dh * map->glyphs[mapch].vymin, 10, 0, 0, -1, map->glyphs[mapch].txmin, map->glyphs[mapch].tymin, 0, 0, DrawQ_Color[0], DrawQ_Color[1], DrawQ_Color[2], DrawQ_Color[3]);
 				e1 = Mod_Mesh_IndexForVertex(mod, surf, x + dw * map->glyphs[mapch].vxmax, y + dh * map->glyphs[mapch].vymin, 10, 0, 0, -1, map->glyphs[mapch].txmax, map->glyphs[mapch].tymin, 0, 0, DrawQ_Color[0], DrawQ_Color[1], DrawQ_Color[2], DrawQ_Color[3]);
 				e2 = Mod_Mesh_IndexForVertex(mod, surf, x + dw * map->glyphs[mapch].vxmax, y + dh * map->glyphs[mapch].vymax, 10, 0, 0, -1, map->glyphs[mapch].txmax, map->glyphs[mapch].tymax, 0, 0, DrawQ_Color[0], DrawQ_Color[1], DrawQ_Color[2], DrawQ_Color[3]);
@@ -1496,6 +1496,7 @@ void DrawQ_RecalcView(void)
 
 void DrawQ_FlushUI(void)
 {
+	int fog_save;
 	dp_model_t *mod = CL_Mesh_UI();
 	if (mod->num_surfaces == 0)
 		return;
@@ -1512,7 +1513,10 @@ void DrawQ_FlushUI(void)
 	GL_DepthMask(false);
 
 	Mod_Mesh_Finalize(mod);
+	fog_save = r_refdef.fogenabled;
+	r_refdef.fogenabled = false;
 	R_DrawModelSurfaces(&cl_meshentities[MESH_UI].render, false, false, false, false, false, true);
+	r_refdef.fogenabled = fog_save;
 
 	Mod_Mesh_Reset(mod);
 }
