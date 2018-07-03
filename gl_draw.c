@@ -794,7 +794,7 @@ void DrawQ_Pic(float x, float y, cachepic_t *pic, float width, float height, flo
 		width = pic->width;
 	if (height == 0)
 		height = pic->height;
-	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, pic->name, flags, pic->texflags, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX), true);
+	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, pic->name, flags, pic->texflags, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_FULLBRIGHT), true);
 	e0 = Mod_Mesh_IndexForVertex(mod, surf, x        , y         , 0, 0, 0, -1, 0, 0, 0, 0, red, green, blue, alpha);
 	e1 = Mod_Mesh_IndexForVertex(mod, surf, x + width, y         , 0, 0, 0, -1, 1, 0, 0, 0, red, green, blue, alpha);
 	e2 = Mod_Mesh_IndexForVertex(mod, surf, x + width, y + height, 0, 0, 0, -1, 1, 1, 0, 0, red, green, blue, alpha);
@@ -822,7 +822,7 @@ void DrawQ_RotPic(float x, float y, cachepic_t *pic, float width, float height, 
 		width = pic->width;
 	if (height == 0)
 		height = pic->height;
-	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, pic->name, flags, pic->texflags, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX), true);
+	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, pic->name, flags, pic->texflags, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_FULLBRIGHT), true);
 	e0 = Mod_Mesh_IndexForVertex(mod, surf, x - cosaf *          org_x  - cosar *           org_y , y - sinaf *          org_x  - sinar *           org_y , 0, 0, 0, -1, 0, 0, 0, 0, red, green, blue, alpha);
 	e1 = Mod_Mesh_IndexForVertex(mod, surf, x + cosaf * (width - org_x) - cosar *           org_y , y + sinaf * (width - org_x) - sinar *           org_y , 0, 0, 0, -1, 1, 0, 0, 0, red, green, blue, alpha);
 	e2 = Mod_Mesh_IndexForVertex(mod, surf, x + cosaf * (width - org_x) + cosar * (height - org_y), y + sinaf * (width - org_x) + sinar * (height - org_y), 0, 0, 0, -1, 1, 1, 0, 0, red, green, blue, alpha);
