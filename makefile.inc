@@ -125,6 +125,7 @@ OBJ_COMMON= \
 	model_shared.o \
 	model_sprite.o \
 	netconn.o \
+	net_httpserver.o \
 	palette.o \
 	polygon.o \
 	portals.o \
@@ -158,15 +159,26 @@ OBJ_MENU= \
 	menu.o \
 	mvm_cmds.o
 
+ifeq ($(DP_LIBMICROHTTPD), yes)
+ifeq ($(DP_MAKE_TARGET), mingw)
+	OBJ_SV_THREAD=thread_win.o
+else
+	OBJ_SV_THREAD=thread_pthread.o
+	LDFLAGS_LINUXSV_THREADS=-lpthread
+endif
+else
+	OBJ_SV_THREAD=thread_null.o
+endif
+
 # note that builddate.c is very intentionally not compiled to a .o before
 # being linked, because it should be recompiled every time an executable is
 # built to give the executable a proper date string
-OBJ_SV= builddate.c sys_linux.o vid_null.o thread_null.o $(OBJ_SND_NULL) $(OBJ_COMMON)
+OBJ_SV= builddate.c sys_linux.o vid_null.o $(OBJ_SV_THREAD) $(OBJ_SND_NULL) $(OBJ_COMMON)
 OBJ_SDL= builddate.c sys_sdl.o vid_sdl.o thread_sdl.o $(OBJ_MENU) $(OBJ_SND_COMMON) snd_sdl.o $(OBJ_VIDEO_CAPTURE) $(OBJ_COMMON)
-
 
 # Compilation
 CFLAGS_COMMON=$(CFLAGS_MAKEDEP) $(CFLAGS_PRELOAD) $(CFLAGS_FS) $(CFLAGS_WARNINGS) $(CFLAGS_LIBZ) $(CFLAGS_LIBJPEG) $(CFLAGS_D3D) $(CFLAGS_NET) $(CFLAGS_SDL) -D_FILE_OFFSET_BITS=64 -D__KERNEL_STRICT_NAMES -I../../../
+CFLAGS_COMMON += $(CFLAGS_LIBMICROHTTPD)
 CFLAGS_CLIENT=-DCONFIG_MENU $(CFLAGS_VIDEO_CAPTURE)
 CFLAGS_SERVER=
 CFLAGS_DEBUG=-ggdb
@@ -203,6 +215,7 @@ LDFLAGS_RELEASE=$(OPTIM_RELEASE) -DSVNREVISION=`{ test -d .svn && svnversion; } 
 ##### UNIX specific variables #####
 
 LDFLAGS_UNIXCOMMON=-lm $(LIB_ODE) $(LIB_Z) $(LIB_JPEG) $(LIB_CRYPTO) $(LIB_CRYPTO_RIJNDAEL)
+LDFLAGS_UNIXCOMMON += $(LIB_LIBMICROHTTPD)
 LDFLAGS_UNIXSV_PRELOAD=-lz -ljpeg -lpng -lcurl
 LDFLAGS_UNIXSDL_PRELOAD=-lz -ljpeg -lpng -logg -ltheora -lvorbis -lvorbisenc -lvorbisfile -lcurl
 CFLAGS_UNIX_PRELOAD=-DPREFER_PRELOAD
@@ -224,6 +237,7 @@ CMD_UNIXMKDIR=mkdir -p
 LDFLAGS_LINUXSV=$(LDFLAGS_UNIXCOMMON) -lrt -ldl
 LDFLAGS_LINUXSDL=$(LDFLAGS_UNIXCOMMON) -lrt -ldl $(LDFLAGS_UNIXSDL)
 
+LDFLAGS_LINUXSV += $(LDFLAGS_LINUXSV_THREADS)
 
 ##### Mac OS X specific variables #####
 
@@ -254,6 +268,7 @@ WINDRES ?= windres
 
 # Link
 # see LDFLAGS_WINCOMMON in makefile
+LDFLAGS_WINCOMMON += $(LIB_LIBMICROHTTPD)
 LDFLAGS_WINSV=$(LDFLAGS_WINCOMMON) $(LIB_CRYPTO) $(LIB_CRYPTO_RIJNDAEL) -mconsole -lwinmm -lws2_32 $(LIB_Z) $(LIB_JPEG)
 LDFLAGS_WINSDL=$(LDFLAGS_WINCOMMON) $(LIB_CRYPTO) $(LIB_CRYPTO_RIJNDAEL) $(SDLCONFIG_LIBS) -lwinmm -lws2_32 $(LIB_Z) $(LIB_JPEG)
 EXE_WINSV=darkplaces-dedicated.exe
