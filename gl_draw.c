@@ -1288,6 +1288,7 @@ float DrawQ_String_Scale(float startx, float starty, const char *text, size_t ma
 			} else {
 				if (!map || map == ft2_oldstyle_map || ch < map->start || ch >= map->start + FONT_CHARS_PER_MAP)
 				{
+					prev_fnt_type = 0;
 					// find the new map
 					map = FontMap_FindForChar(fontmap, ch);
 					if (!map)

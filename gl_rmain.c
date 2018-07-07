@@ -9049,10 +9049,9 @@ static void R_DrawTextureSurfaceList_DepthOnly(int texturenumsurfaces, const msu
 static void R_ProcessModelTextureSurfaceList(int texturenumsurfaces, const msurface_t **texturesurfacelist, qboolean writedepth, qboolean depthonly, qboolean prepass, qboolean ui)
 {
 	CHECKGLERROR
-	if (ui) {
-		rsurface.batchmultidraw = true;
+	if (ui)
 		R_DrawModelTextureSurfaceList(texturenumsurfaces, texturesurfacelist, writedepth, prepass);
-	} else if (depthonly)
+	else if (depthonly)
 		R_DrawTextureSurfaceList_DepthOnly(texturenumsurfaces, texturesurfacelist);
 	else if (prepass)
 	{
