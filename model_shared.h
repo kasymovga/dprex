@@ -163,10 +163,11 @@ typedef struct surfmesh_s
 	unsigned short *blends;
 	// set if there is some kind of animation on this model
 	qboolean isanimated;
-
+#if 0
 	// dynamic mesh building support (Mod_Mesh_*)
 	int num_vertexhashsize; // always pow2 for simple masking
 	int *data_vertexhash; // hash table - wrapping buffer for storing index of similar vertex with -1 as terminator
+#endif
 	int max_vertices; // preallocated size of data_vertex3f and friends (always >= num_vertices)
 	int max_triangles; // preallocated size of data_element3i
 }

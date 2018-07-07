@@ -4392,7 +4392,9 @@ void Mod_Mesh_Reset(dp_model_t *mod)
 	mod->num_surfaces = 0;
 	mod->surfmesh.num_vertices = 0;
 	mod->surfmesh.num_triangles = 0;
+#if 0
 	memset(mod->surfmesh.data_vertexhash, -1, mod->surfmesh.num_vertexhashsize * sizeof(*mod->surfmesh.data_vertexhash));
+#endif
 	mod->DrawSky = NULL; // will be set if a texture needs it
 	mod->DrawAddWaterPlanes = NULL; // will be set if a texture needs it
 }
@@ -4473,7 +4475,10 @@ msurface_t *Mod_Mesh_AddSurface(dp_model_t *mod, texture_t *tex, qboolean batchw
 
 int Mod_Mesh_IndexForVertex(dp_model_t *mod, msurface_t *surf, float x, float y, float z, float nx, float ny, float nz, float s, float t, float u, float v, float r, float g, float b, float a)
 {
+#if 0
 	int hashindex, h, vnum, mask;
+#endif
+	int vnum;
 	surfmesh_t *mesh = &mod->surfmesh;
 	if (mesh->max_vertices == mesh->num_vertices)
 	{
@@ -4485,6 +4490,7 @@ int Mod_Mesh_IndexForVertex(dp_model_t *mod, msurface_t *surf, float x, float y,
 		mesh->data_texcoordtexture2f = (float *)Mem_Realloc(mod->mempool, mesh->data_texcoordtexture2f, mesh->max_vertices * sizeof(float[2]));
 		mesh->data_texcoordlightmap2f = (float *)Mem_Realloc(mod->mempool, mesh->data_texcoordlightmap2f, mesh->max_vertices * sizeof(float[2]));
 		mesh->data_lightmapcolor4f = (float *)Mem_Realloc(mod->mempool, mesh->data_lightmapcolor4f, mesh->max_vertices * sizeof(float[4]));
+#if 0
 		// rebuild the hash table
 		mesh->num_vertexhashsize = 4 * mesh->max_vertices;
 		mesh->num_vertexhashsize &= ~(mesh->num_vertexhashsize - 1); // round down to pow2
@@ -4500,7 +4506,9 @@ int Mod_Mesh_IndexForVertex(dp_model_t *mod, msurface_t *surf, float x, float y,
 				; // just iterate until we find the terminator
 			mesh->data_vertexhash[h] = vnum;
 		}
+#endif
 	}
+#if 0
 	mask = mod->surfmesh.num_vertexhashsize - 1;
 	// this uses prime numbers intentionally for computing the hash
 	hashindex = (unsigned int)(x * 2003 + y * 4001 + z * 7919 + nx * 4097 + ny * 257 + nz * 17) & mask;
@@ -4515,6 +4523,7 @@ int Mod_Mesh_IndexForVertex(dp_model_t *mod, msurface_t *surf, float x, float y,
 		 && mesh->data_lightmapcolor4f[vnum * 4 + 0] == r && mesh->data_lightmapcolor4f[vnum * 4 + 1] == g && mesh->data_lightmapcolor4f[vnum * 4 + 2] == b && mesh->data_lightmapcolor4f[vnum * 4 + 3] == a)
 			return vnum;
 	}
+#endif
 	// add the new vertex
 	vnum = mesh->num_vertices++;
 	if (surf->num_vertices > 0)
@@ -4532,7 +4541,9 @@ int Mod_Mesh_IndexForVertex(dp_model_t *mod, msurface_t *surf, float x, float y,
 		VectorSet(surf->maxs, x, y, z);
 	}
 	surf->num_vertices = mesh->num_vertices - surf->num_firstvertex;
+#if 0
 	mesh->data_vertexhash[h] = vnum;
+#endif
 	mesh->data_vertex3f[vnum * 3 + 0] = x;
 	mesh->data_vertex3f[vnum * 3 + 1] = y;
 	mesh->data_vertex3f[vnum * 3 + 2] = z;
