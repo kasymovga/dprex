@@ -394,6 +394,8 @@ static int MapScancode( unsigned int sdlscancode )
 	case SDL_SCANCODE_X:                  return 'x';
 	case SDL_SCANCODE_Y:                  return 'y';
 	case SDL_SCANCODE_Z:                  return 'z';
+	case SDL_SCANCODE_LEFTBRACKET:        return '[';
+	case SDL_SCANCODE_RIGHTBRACKET:       return ']';
 	case SDL_SCANCODE_CAPSLOCK:           return K_CAPSLOCK;
 	case SDL_SCANCODE_F1:                 return K_F1;
 	case SDL_SCANCODE_F2:                 return K_F2;
