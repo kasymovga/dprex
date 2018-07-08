@@ -737,7 +737,6 @@ static void VM_CL_R_ClearScene (prvm_prog_t *prog)
 	// restore the view settings to the values that VM_CL_UpdateView received from the client code
 	r_refdef.view = csqc_original_r_refdef_view;
 	// polygonbegin without draw2d arg has to guess
-	prog->polygonbegin_guess2d = false;
 	VectorCopy(cl.csqc_vieworiginfromengine, cl.csqc_vieworigin);
 	VectorCopy(cl.csqc_viewanglesfromengine, cl.csqc_viewangles);
 	cl.csqc_vidvars.drawworld = r_drawworld.integer != 0;
@@ -3280,9 +3279,6 @@ static void VM_CL_R_RenderScene (prvm_prog_t *prog)
 	t = Sys_DirtyTime() - t;if (t < 0 || t >= 1800) t = 0;
 	prog->functions[PRVM_clientfunction(CSQC_UpdateView)].totaltime -= t;
 
-	// polygonbegin without draw2d arg has to guess
-	prog->polygonbegin_guess2d = false;
-
 	// update the views
 	if (ismain)
 	{
@@ -3293,33 +3289,28 @@ static void VM_CL_R_RenderScene (prvm_prog_t *prog)
 }
 
 //void(string texturename, float flag[, float is2d]) R_BeginPolygon
+int r_polygon_started = 0;
+int r_polygon_vertex_num;
+int r_polygon_vertex_max = 0;
+int r_polygon_2d = 0;
+int r_polygon_drawflags;
+const char *r_polygon_tex = NULL;
+prvm_vec_t *r_polygon_vertex_list = NULL;
 static void VM_CL_R_PolygonBegin (prvm_prog_t *prog)
 {
-	const char *texname;
-	int drawflags;
-	qboolean draw2d;
-	dp_model_t *mod;
-
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_CL_R_PolygonBegin);
+	r_polygon_vertex_num = 0;
+	r_polygon_started = 1;
+	r_polygon_tex = PRVM_G_STRING(OFS_PARM0);
+	if (!r_polygon_tex[0])
+		r_polygon_tex = "white";
 
-	texname = PRVM_G_STRING(OFS_PARM0);
-	drawflags = (int)PRVM_G_FLOAT(OFS_PARM1);
 	if (prog->argc >= 3)
-		draw2d = PRVM_G_FLOAT(OFS_PARM2) != 0;
+		r_polygon_2d = (PRVM_G_FLOAT(OFS_PARM2) ? 1 : 0);
 	else
-	{
-		// weird hacky way to figure out if this is a 2D HUD polygon or a scene
-		// polygon, for compatibility with mods aimed at old darkplaces versions
-		// - polygonbegin_guess2d is 0 if the most recent major call was
-		// clearscene, 1 if the most recent major call was drawpic (and similar)
-		// or renderscene
-		draw2d = prog->polygonbegin_guess2d;
-	}
+		r_polygon_2d = -1;
 
-	// we need to remember whether this is a 2D or 3D mesh we're adding to
-	mod = draw2d ? CL_Mesh_UI() : CL_Mesh_CSQC();
-	prog->polygonbegin_model = mod;
-	Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, texname, drawflags, TEXF_ALPHA, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_NOCULLFACE), draw2d);
+	r_polygon_drawflags = (int)PRVM_G_FLOAT(OFS_PARM1);
 }
 
 //void(vector org, vector texcoords, vector rgb, float alpha) R_PolygonVertex
@@ -3329,47 +3320,81 @@ static void VM_CL_R_PolygonVertex (prvm_prog_t *prog)
 	const prvm_vec_t *tc = PRVM_G_VECTOR(OFS_PARM1);
 	const prvm_vec_t *c = PRVM_G_VECTOR(OFS_PARM2);
 	const prvm_vec_t a = PRVM_G_FLOAT(OFS_PARM3);
-	dp_model_t *mod = prog->polygonbegin_model;
-	int e0, e1, e2;
-	msurface_t *surf;
 
 	VM_SAFEPARMCOUNT(4, VM_CL_R_PolygonVertex);
 
-	if (!mod || mod->num_surfaces == 0)
+	if (!r_polygon_started)
 	{
 		VM_Warning(prog, "VM_CL_R_PolygonVertex: VM_CL_R_PolygonBegin wasn't called\n");
 		return;
 	}
-
-	surf = &mod->data_surfaces[mod->num_surfaces - 1];
-	e2 = Mod_Mesh_IndexForVertex(mod, surf, v[0], v[1], v[2], 0, 0, 0, tc[0], tc[1], 0, 0, c[0], c[1], c[2], a);
-	if (surf->num_vertices >= 3)
-	{
-		// the first element is the start of the triangle fan
-		e0 = surf->num_firstvertex;
-		// the second element is the previous vertex
-		e1 = e0 + 1;
-		if (surf->num_triangles > 0)
-			e1 = mod->surfmesh.data_element3i[(surf->num_firsttriangle + surf->num_triangles) * 3 - 1];
-		Mod_Mesh_AddTriangle(mod, surf, e0, e1, e2);
+	r_polygon_vertex_num++;
+	if (r_polygon_vertex_num >= r_polygon_vertex_max) {
+		r_polygon_vertex_max = max(r_polygon_vertex_max * 2, 64);
+		r_polygon_vertex_list = realloc(r_polygon_vertex_list, r_polygon_vertex_max * sizeof(prvm_vec_t) * 9);
 	}
+	r_polygon_vertex_list[9 * r_polygon_vertex_num - 9] = v[0];
+	r_polygon_vertex_list[9 * r_polygon_vertex_num - 8] = v[1];
+	r_polygon_vertex_list[9 * r_polygon_vertex_num - 7] = v[2];
+	r_polygon_vertex_list[9 * r_polygon_vertex_num - 6] = tc[0];
+	r_polygon_vertex_list[9 * r_polygon_vertex_num - 5] = tc[1];
+	r_polygon_vertex_list[9 * r_polygon_vertex_num - 4] = c[0];
+	r_polygon_vertex_list[9 * r_polygon_vertex_num - 3] = c[1];
+	r_polygon_vertex_list[9 * r_polygon_vertex_num - 2] = c[2];
+	r_polygon_vertex_list[9 * r_polygon_vertex_num - 1] = a;
 }
 
 //void() R_EndPolygon
 static void VM_CL_R_PolygonEnd (prvm_prog_t *prog)
 {
-	dp_model_t *mod = prog->polygonbegin_model;
+	dp_model_t *mod;
 	msurface_t *surf;
-
-	VM_SAFEPARMCOUNT(0, VM_CL_R_PolygonEnd);
-	if (!mod || mod->num_surfaces == 0)
-	{
-		VM_Warning(prog, "VM_CL_R_PolygonEnd: VM_CL_R_PolygonBegin wasn't called\n");
-		return;
+	int i;
+	int e0, e1, e2;
+	if (r_polygon_2d == 0) {
+		mod = CL_Mesh_CSQC();
+	} else if (r_polygon_2d > 0) {
+		mod = CL_Mesh_UI();
+	} else {
+		for (i = 0; i < r_polygon_vertex_num; i++) {
+			if (r_polygon_vertex_list[9 * i + 2] != 0)
+				break;
+		}
+		if (i == r_polygon_vertex_num) {
+			mod = CL_Mesh_UI();
+			r_polygon_2d = 1;
+		} else {
+			mod = CL_Mesh_CSQC();
+			r_polygon_2d = 0;
+		}
 	}
-	surf = &mod->data_surfaces[mod->num_surfaces - 1];
+	VM_SAFEPARMCOUNT(0, VM_CL_R_PolygonEnd);
+	if (r_polygon_vertex_num < 3)
+		goto skip;
+
+	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, r_polygon_tex, r_polygon_drawflags, TEXF_ALPHA, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_NOCULLFACE), r_polygon_2d);
+	for (i = 0; i < r_polygon_vertex_num; i++) {
+		// the second element is the previous vertex
+		e1 = e2;
+		e2 = Mod_Mesh_IndexForVertex(mod, surf,
+				r_polygon_vertex_list[i * 9],
+				r_polygon_vertex_list[i * 9 + 1],
+				r_polygon_vertex_list[i * 9 + 2], 0, 0, 0,
+				r_polygon_vertex_list[i * 9 + 3],
+				r_polygon_vertex_list[i * 9 + 4], 0, 0,
+				r_polygon_vertex_list[i * 9 + 5],
+				r_polygon_vertex_list[i * 9 + 6],
+				r_polygon_vertex_list[i * 9 + 7],
+				r_polygon_vertex_list[i * 9 + 8]);
+		if (i > 1)
+			Mod_Mesh_AddTriangle(mod, surf, e0, e1, e2);
+		else if (i < 1)
+			// the first element is the start of the triangle fan
+			e0 = e2;
+	}
 	Mod_BuildNormals(surf->num_firstvertex, surf->num_vertices, surf->num_triangles, mod->surfmesh.data_vertex3f, mod->surfmesh.data_element3i + 3 * surf->num_firsttriangle, mod->surfmesh.data_normal3f, true);
-	prog->polygonbegin_model = NULL;
+skip:
+	r_polygon_vertex_num = 0;
 }
 
 /*
@@ -4928,14 +4953,10 @@ const int vm_cl_numbuiltins = sizeof(vm_cl_builtins) / sizeof(prvm_builtin_t);
 void CLVM_init_cmd(prvm_prog_t *prog)
 {
 	VM_Cmd_Init(prog);
-	prog->polygonbegin_model = NULL;
-	prog->polygonbegin_guess2d = 0;
 }
 
 void CLVM_reset_cmd(prvm_prog_t *prog)
 {
 	World_End(&cl.world);
 	VM_Cmd_Reset(prog);
-	prog->polygonbegin_model = NULL;
-	prog->polygonbegin_guess2d = 0;
 }

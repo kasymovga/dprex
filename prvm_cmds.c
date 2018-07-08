@@ -3420,9 +3420,6 @@ void VM_drawcharacter(prvm_prog_t *prog)
 	float sx, sy;
 	VM_SAFEPARMCOUNT(6,VM_drawcharacter);
 
-	// polygonbegin without draw2d arg has to guess
-	prog->polygonbegin_guess2d = true;
-
 	character = (char) PRVM_G_FLOAT(OFS_PARM1);
 	if(character == 0)
 	{
@@ -3473,9 +3470,6 @@ void VM_drawstring(prvm_prog_t *prog)
 	float sx, sy;
 	VM_SAFEPARMCOUNTRANGE(5,6,VM_drawstring);
 
-	// polygonbegin without draw2d arg has to guess
-	prog->polygonbegin_guess2d = true;
-
 	string = PRVM_G_STRING(OFS_PARM1);
 	pos = PRVM_G_VECTOR(OFS_PARM0);
 	scale = PRVM_G_VECTOR(OFS_PARM2);
@@ -3524,9 +3518,6 @@ void VM_drawcolorcodedstring(prvm_prog_t *prog)
 	float sx, sy, alpha;
 
 	VM_SAFEPARMCOUNTRANGE(5,6,VM_drawcolorcodedstring);
-
-	// polygonbegin without draw2d arg has to guess
-	prog->polygonbegin_guess2d = true;
 
 	if (prog->argc == 6) // full 6 parms, like normal drawstring
 	{
@@ -3813,9 +3804,6 @@ void VM_drawpic(prvm_prog_t *prog)
 
 	VM_SAFEPARMCOUNTRANGE(5,6,VM_drawpic);
 
-	// polygonbegin without draw2d arg has to guess
-	prog->polygonbegin_guess2d = true;
-
 	picname = PRVM_G_STRING(OFS_PARM1);
 	VM_CheckEmptyString(prog, picname);
 
@@ -3860,9 +3848,6 @@ void VM_drawrotpic(prvm_prog_t *prog)
 	int flag;
 
 	VM_SAFEPARMCOUNT(8,VM_drawrotpic);
-
-	// polygonbegin without draw2d arg has to guess
-	prog->polygonbegin_guess2d = true;
 
 	picname = PRVM_G_STRING(OFS_PARM1);
 	VM_CheckEmptyString(prog, picname);
@@ -3909,9 +3894,6 @@ void VM_drawsubpic(prvm_prog_t *prog)
 	int flag;
 
 	VM_SAFEPARMCOUNT(8,VM_drawsubpic);
-
-	// polygonbegin without draw2d arg has to guess
-	prog->polygonbegin_guess2d = true;
 
 	picname = PRVM_G_STRING(OFS_PARM2);
 	VM_CheckEmptyString(prog, picname);
@@ -3966,9 +3948,6 @@ void VM_drawfill(prvm_prog_t *prog)
 
 	VM_SAFEPARMCOUNT(5,VM_drawfill);
 
-	// polygonbegin without draw2d arg has to guess
-	prog->polygonbegin_guess2d = true;
-
 	pos = PRVM_G_VECTOR(OFS_PARM0);
 	size = PRVM_G_VECTOR(OFS_PARM1);
 	rgb = PRVM_G_VECTOR(OFS_PARM2);
@@ -4000,9 +3979,6 @@ void VM_drawsetcliparea(prvm_prog_t *prog)
 	float x,y,w,h;
 	VM_SAFEPARMCOUNT(4,VM_drawsetcliparea);
 
-	// polygonbegin without draw2d arg has to guess
-	prog->polygonbegin_guess2d = true;
-
 	x = bound(0, PRVM_G_FLOAT(OFS_PARM0), vid_conwidth.integer);
 	y = bound(0, PRVM_G_FLOAT(OFS_PARM1), vid_conheight.integer);
 	w = bound(0, PRVM_G_FLOAT(OFS_PARM2) + PRVM_G_FLOAT(OFS_PARM0) - x, (vid_conwidth.integer  - x));
@@ -4021,9 +3997,6 @@ drawresetcliparea()
 void VM_drawresetcliparea(prvm_prog_t *prog)
 {
 	VM_SAFEPARMCOUNT(0,VM_drawresetcliparea);
-
-	// polygonbegin without draw2d arg has to guess
-	prog->polygonbegin_guess2d = true;
 
 	DrawQ_ResetClipArea();
 }
@@ -4454,9 +4427,6 @@ void VM_drawline (prvm_prog_t *prog)
 	unsigned char	flags;
 
 	VM_SAFEPARMCOUNT(6, VM_drawline);
-
-	// polygonbegin without draw2d arg has to guess
-	prog->polygonbegin_guess2d = true;
 
 	width	= PRVM_G_FLOAT(OFS_PARM0);
 	c1		= PRVM_G_VECTOR(OFS_PARM1);
