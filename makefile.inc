@@ -108,6 +108,7 @@ OBJ_COMMON= \
 	hmac.o \
 	host.o \
 	host_cmd.o \
+	irc.o \
 	image.o \
 	image_png.o \
 	jpeg.o \
