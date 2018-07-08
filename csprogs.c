@@ -252,7 +252,8 @@ static void CSQC_SetGlobals (double frametime)
 		VectorCopy(cl.punchvector, PRVM_clientglobalvector(view_punchvector));
 		PRVM_clientglobalfloat(maxclients) = cl.maxclients;
 
-		PRVM_clientglobalfloat(player_localentnum) = cl.viewentity;
+		if(!IS_OLDNEXUIZ_DERIVED(gamemode))
+			PRVM_clientglobalfloat(player_localentnum) = cl.viewentity;
 
 		CSQC_R_RecalcView();
 	CSQC_END
@@ -486,13 +487,10 @@ qboolean CL_VM_UpdateView (double frametime)
 		// CSQC_UpdateView function does not call R_ClearScene as it should
 		r_refdef.scene.numentities = 0;
 		r_refdef.scene.numlights = 0;
-		// polygonbegin without draw2d arg has to guess
-		prog->polygonbegin_guess2d = false;
 		// pass in width and height as parameters (EXT_CSQC_1)
 		PRVM_G_FLOAT(OFS_PARM0) = vid.width;
 		PRVM_G_FLOAT(OFS_PARM1) = vid.height;
 		prog->ExecuteProgram(prog, PRVM_clientfunction(CSQC_UpdateView), "QC function CSQC_UpdateView is missing");
-		prog->polygonbegin_guess2d = false;
 		//VectorCopy(oldangles, cl.viewangles);
 		// Dresk : Reset Dmg Globals Here
 		CL_VM_UpdateDmgGlobals(0, 0, emptyvector);
