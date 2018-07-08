@@ -273,6 +273,12 @@ ifeq ($(DP_LINK_PNG), shared)
 	LIB_PNG=`pkg-config --libs libpng`
 endif
 
+#ogg vorbis
+ifeq ($(DP_LINK_OGGVORBIS), shared)
+	LIB_OGGVORBIS=`pkg-config --libs vorbis vorbisfile`
+	CFLAGS_OGGVORBIS=`pkg-config --cflags vorbis vorbisfile` -DLINK_TO_LIBVORBIS
+endif
+
 # ode
 ifeq ($(DP_LINK_ODE), shared)
 	ODE_CONFIG?=ode-config
