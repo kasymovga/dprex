@@ -2286,6 +2286,9 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	if (cls.state == ca_dedicated)
 		return NULL;
 
+	if (!strcmp(name, "white")) {
+		Con_Printf("Requested white\n");
+	}
 	Image_StripImageExtension(name, basename, sizeof(basename));
 
 	// check for DDS texture file first
