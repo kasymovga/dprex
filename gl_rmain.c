@@ -1333,14 +1333,16 @@ static void R_GLSL_CompilePermutation(r_glsl_permutation_t *p, unsigned int mode
 		// get the uniform block indices so we can bind them
 		p->ubiloc_Skeletal_Transform12_UniformBlock = -1;
 #ifndef USE_GLES2 /* FIXME: GLES3 only */
-		p->ubiloc_Skeletal_Transform12_UniformBlock = qglGetUniformBlockIndex(p->program, "Skeletal_Transform12_UniformBlock");
+		if (vid.support.gl31)
+			p->ubiloc_Skeletal_Transform12_UniformBlock = qglGetUniformBlockIndex(p->program, "Skeletal_Transform12_UniformBlock");
 #endif
 		// clear the uniform block bindings
 		p->ubibind_Skeletal_Transform12_UniformBlock = -1;
 		// bind the uniform blocks in use
 		ubibind = 0;
 #ifndef USE_GLES2 /* FIXME: GLES3 only */
-		if (p->ubiloc_Skeletal_Transform12_UniformBlock >= 0) {p->ubibind_Skeletal_Transform12_UniformBlock = ubibind;qglUniformBlockBinding(p->program, p->ubiloc_Skeletal_Transform12_UniformBlock, ubibind);ubibind++;}
+		if (vid.support.gl31)
+			if (p->ubiloc_Skeletal_Transform12_UniformBlock >= 0) {p->ubibind_Skeletal_Transform12_UniformBlock = ubibind;qglUniformBlockBinding(p->program, p->ubiloc_Skeletal_Transform12_UniformBlock, ubibind);ubibind++;}
 #endif
 		// we're done compiling and setting up the shader, at least until it is used
 		CHECKGLERROR
@@ -5575,7 +5577,9 @@ void R_UpdateVariables(void)
 	switch(vid.renderpath)
 	{
 	case RENDERPATH_GL32:
-		r_gpuskeletal = r_glsl_skeletal.integer && !r_showsurfaces.integer && r_shadows.integer <= 0 && !r_refdef.scene.rtdlightshadows && !r_refdef.scene.rtworldshadows;
+#ifndef USE_GLES2
+		r_gpuskeletal = r_glsl_skeletal.integer && vid.support.gl31 && !r_showsurfaces.integer && r_shadows.integer <= 0 && !r_refdef.scene.rtdlightshadows && !r_refdef.scene.rtworldshadows;
+#endif
 	case RENDERPATH_GLES2:
 		if(!vid_gammatables_trivial)
 		{

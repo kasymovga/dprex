@@ -54,6 +54,7 @@ typedef struct viddef_support_s
 	qboolean arb_half_float_pixel;
 	qboolean arb_half_float_vertex;
 	qboolean arb_multisample;
+	qboolean gl31;
 }
 viddef_support_t;
 
