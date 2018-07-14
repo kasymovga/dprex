@@ -695,12 +695,16 @@ static dllfunction_t openglfuncs[] =
 	{"glGetUniformIndices"        , (void **) &qglGetUniformIndices},
 	{"glGetActiveUniformsiv"      , (void **) &qglGetActiveUniformsiv},
 	{"glGetActiveUniformName"     , (void **) &qglGetActiveUniformName},
-	{"glGetUniformBlockIndex"     , (void **) &qglGetUniformBlockIndex},
 	{"glGetActiveUniformBlockiv"  , (void **) &qglGetActiveUniformBlockiv},
 	{"glGetActiveUniformBlockName", (void **) &qglGetActiveUniformBlockName},
 	{"glBindBufferRange"          , (void **) &qglBindBufferRange},
 	{"glBindBufferBase"           , (void **) &qglBindBufferBase},
 	{"glGetIntegeri_v"            , (void **) &qglGetIntegeri_v},
+	{NULL, NULL}
+};
+
+static dllfunction_t opengl31funcs[] = {
+	{"glGetUniformBlockIndex"     , (void **) &qglGetUniformBlockIndex},
 	{"glUniformBlockBinding"      , (void **) &qglUniformBlockBinding},
 	{NULL, NULL}
 };
@@ -829,6 +833,7 @@ void VID_CheckExtensions(void)
 	vid.support.arb_half_float_pixel = GL_CheckExtension("GL_ARB_half_float_pixel", NULL, "-nohalffloatpixel", false);
 	vid.support.arb_half_float_vertex = GL_CheckExtension("GL_ARB_half_float_vertex", NULL, "-nohalffloatvertex", false);
 	vid.support.arb_multisample = GL_CheckExtension("GL_ARB_multisample", multisamplefuncs, "-nomultisample", false);
+	vid.support.gl31 = GL_CheckExtension("gl3_1", opengl31funcs, "-nogl31", false);
 	vid.allowalphatocoverage = false;
 
 // COMMANDLINEOPTION: GL: -noshaders disables use of OpenGL 2.0 shaders (which allow pixel shader effects, can improve per pixel lighting performance and capabilities)
