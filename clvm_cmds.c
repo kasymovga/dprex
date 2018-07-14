@@ -3291,11 +3291,10 @@ static void VM_CL_R_RenderScene (prvm_prog_t *prog)
 //void(string texturename, float flag[, float is2d]) R_BeginPolygon
 int r_polygon_started = 0;
 int r_polygon_vertex_num;
-int r_polygon_vertex_max = 0;
 int r_polygon_2d = 0;
 int r_polygon_drawflags;
 const char *r_polygon_tex = NULL;
-prvm_vec_t *r_polygon_vertex_list = NULL;
+prvm_vec_t r_polygon_vertex_list[POLYGONELEMENTS_MAXPOINTS];
 static void VM_CL_R_PolygonBegin (prvm_prog_t *prog)
 {
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_CL_R_PolygonBegin);
@@ -3328,11 +3327,11 @@ static void VM_CL_R_PolygonVertex (prvm_prog_t *prog)
 		VM_Warning(prog, "VM_CL_R_PolygonVertex: VM_CL_R_PolygonBegin wasn't called\n");
 		return;
 	}
-	r_polygon_vertex_num++;
-	if (r_polygon_vertex_num >= r_polygon_vertex_max) {
-		r_polygon_vertex_max = max(r_polygon_vertex_max * 2, 64);
-		r_polygon_vertex_list = realloc(r_polygon_vertex_list, r_polygon_vertex_max * sizeof(prvm_vec_t) * 9);
+	if (r_polygon_vertex_num == POLYGONELEMENTS_MAXPOINTS) {
+		VM_Warning(prog, "VM_CL_R_PolygonVertex: vertex limit (%i) reached\n", r_polygon_vertex_num);
+		return;
 	}
+	r_polygon_vertex_num++;
 	r_polygon_vertex_list[9 * r_polygon_vertex_num - 9] = v[0];
 	r_polygon_vertex_list[9 * r_polygon_vertex_num - 8] = v[1];
 	r_polygon_vertex_list[9 * r_polygon_vertex_num - 7] = v[2];
