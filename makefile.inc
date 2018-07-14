@@ -461,6 +461,10 @@ nexuiz.o: %.o : %.rc
 	$(CHECKLEVEL2)
 	$(WINDRES) -o $@ $<
 
+rexuiz.o: %.o : %.rc
+	$(CHECKLEVEL2)
+	$(WINDRES) -o $@ $<
+
 .c.o:
 	$(CHECKLEVEL2)
 	$(DO_CC)
